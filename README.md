@@ -1,4 +1,4 @@
-# Cloudflare Enumeration Tool v1.0
+# Cloudflare Enumeration Tool v1.1
 
 A simple tool to allow easy querying of Cloudflare's DNS data written in Python.
 

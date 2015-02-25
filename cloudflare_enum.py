@@ -108,7 +108,7 @@ class cloudflare_enum:
             `//+sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss+/-    
             `//+ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo+++++/.    
              ``````````````````````````````````````````````````````````````````````````````````````     
-                                                             Cloudflare DNS Enumeration Tool V1.0
+                                                             Cloudflare DNS Enumeration Tool V1.1
                                                                                     By mandatory
         """
 
@@ -131,7 +131,7 @@ class cloudflare_enum:
         }
         self.s.headers.update( dict( new_headers.items() + self.global_headers.items() ) )
         r = self.s.get('https://www.cloudflare.com/my-websites', )
-        self.atok = self.find_between_r( r.text, '"login":true,"atok":"', '"};</script>' ) # http://xkcd.com/292/
+        self.atok = self.find_between_r( r.text, '"login":true,"atok":"', '","in_www_next_beta"' ) # http://xkcd.com/292/
 
         get_data = {
             'sort': 'zone_statuself.s.asc',
@@ -180,7 +180,7 @@ class cloudflare_enum:
         }
         self.s.headers.update( dict( new_headers.items() + self.global_headers.items() ) )
         r = self.s.get('https://www.cloudflare.com/my-websites', )
-        self.atok = self.find_between_r( r.text, '"login":true,"atok":"', '"};</script>' ) # http://xkcd.com/292/
+        self.atok = self.find_between_r( r.text, '"login":true,"atok":"', '","in_www_next_beta"' ) # http://xkcd.com/292/
 
         get_data = {
             'atok': self.atok,
@@ -241,10 +241,13 @@ class cloudflare_enum:
         self.s.headers.update( dict( new_headers.items() + self.global_headers.items() ) )
         r = self.s.get('https://www.cloudflare.com/api/v2/rec/load_all', params=get_data)
 
-        return_dict = json.loads( r.text )['response']['recs']['objs']
+        try:
+            return_dict = json.loads( r.text )['response']['recs']['objs']
 
-        for record in return_dict:
-            print record["type"] + ": " + record["name"] + " -> " + record["content"]
+            for record in return_dict:
+                print record["type"] + ": " + record["name"] + " -> " + record["content"]
+        except:
+            print "Unexpected error:", sys.exc_info()[0]
 
         self.statusmsg( 'Deleting domain from account for cleanup...' )
 
