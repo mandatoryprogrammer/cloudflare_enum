@@ -4,6 +4,7 @@
 # Unauthorized use is stricly prohibited, please contact mandatory@gmail.com with questions/comments.
 import requests
 import json
+import time
 import csv
 import sys
 import os
@@ -78,6 +79,7 @@ class cloudflare_enum:
             return False
 
         request_id = data['result']['id']
+        time.sleep( 60 )
 
         get_data = {
             'per_page': '100',
@@ -202,7 +204,6 @@ class cloudflare_enum:
                     return_dict[ pew[5] ] = pew[6] 
 
         return return_dict
-        
 
 if __name__ == "__main__":
     if len( sys.argv ) < 3:
