@@ -22,6 +22,7 @@ class cloudflare_enum:
         self.atok = ''
 
     def log_in( self, username, password ):
+        self.statusmsg( "Initializing Login Method..." )
         parse_dict = {}
 
         r = self.s.get('https://www.cloudflare.com/', )
@@ -29,6 +30,8 @@ class cloudflare_enum:
         new_headers = {
             'Referer': 'https://www.cloudflare.com/',
         }
+
+        self.statusmsg( "Retrieving Security Token ..." )
         self.s.headers.update( dict( new_headers.items() + self.global_headers.items() ) )
         r = self.s.get('https://www.cloudflare.com/a/login', )
         parse_dict[ 'security_token_0' ] = self.find_between_r( r.text, '"security_token":"', '"}};</script>' ) # http://xkcd.com/292/
@@ -42,6 +45,8 @@ class cloudflare_enum:
             'Referer': 'https://www.cloudflare.com/a/login',
             'Content-Type': 'application/x-www-form-urlencoded',
         }
+
+        self.statusmsg( "Logining ..." )
         self.s.headers.update( dict( new_headers.items() + self.global_headers.items() ) )
         r = self.s.post('https://www.cloudflare.com/a/login', data=post_data)
         self.atok = self.find_between_r( r.text, 'window.bootstrap = {"atok":"', '","locale":"' ) # http://xkcd.com/292/
@@ -70,13 +75,11 @@ class cloudflare_enum:
             'Cache-Control': 'no-cache',
             'X-ATOK': self.atok,
         }
+        self.statusmsg("Retrieving Request ID ...")
         self.s.headers.update( dict( new_headers.items() + self.global_headers.items() ) )
         r = self.s.post('https://www.cloudflare.com/api/v4/zones', data=json.dumps( post_data ))
         data = json.loads( r.text )
-        success = data['success']
-        if not success:
-            print r.text
-            return False
+        self.checkError(data)
 
         request_id = data['result']['id']
         time.sleep( 60 )
@@ -92,9 +95,11 @@ class cloudflare_enum:
             'Referer': 'https://www.cloudflare.com/a/setup/' + domain + '/step/2',
             'X-ATOK': self.atok,
         }
+        self.statusmsg("Getting DNS Records ...")
         self.s.headers.update( dict( new_headers.items() + self.global_headers.items() ) )
         r = self.s.get('https://www.cloudflare.com/api/v4/zones/' + request_id + '/dns_records', params=get_data)
         return_data = json.loads( r.text )
+        self.checkError(return_data)
 
         new_headers = {
             'X-Requested-With': 'XMLHttpRequest',
@@ -102,6 +107,7 @@ class cloudflare_enum:
             'X-ATOK': self.atok,
         }
         self.s.headers.update( dict( new_headers.items() + self.global_headers.items() ) )
+        self.statusmsg("Removing Site from Account ...")
         r = self.s.delete('https://www.cloudflare.com/api/v4/zones/' + request_id, )
 
         get_data = {
@@ -122,6 +128,7 @@ class cloudflare_enum:
     def get_spreadsheet( self, domain ):
         dns_data = self.get_domain_dns( domain )
         if dns_data:
+            self.statusmsg( "Exporting DNS Records ..." )
             filename = domain.replace( ".", "_" ) + ".csv"
 
             with open( filename, 'wb' ) as csvfile:
@@ -129,37 +136,47 @@ class cloudflare_enum:
                 dns_writer.writerow( [ "name", "type", "content" ] )
                 for record in dns_data:
                     dns_writer.writerow( [ record["name"], record["type"], record["content"] ] )
-                
-            self.statusmsg( "Spreadsheet created at " + os.getcwd() + "/" + filename )
+
+            self.successmsg( "Spreadsheet created at " + os.getcwd() + "/" + filename )
 
     def print_banner( self ):
         if self.verbose:
             print """
-            
-                                                     `..--------..`                               
-                                                 .-:///::------::///:.`                           
-                                              `-//:-.`````````````.-://:.`    `   `               
-                                            .://-.```````````````````.-://-`  :  `-   .           
-                                          `-//:.........................-://. /. -: `:`  ``       
-                                         `://--------:::://////:::--------://-::.::`:- .:.        
-                              ``.---..` `///::::::///////////////////:::::::///::::::--:.`.-.     
-                            .://::::///::///::///////////////////////////:::///:-----::--:-`  `    
-                          `:/:-...--:://////////////////////////////////////////----------.--.`    
-                         `:/:..-:://////////////////////////////////////////////-----------.````    
-                         .//-::////////////////////////////////////:::::////////-...--------...`    
-                         -/////////////////////////////////////////////::::----:. `.-::::::-..``    
-                    ``.--:////////////////////////////////////////////////::-..```-///::::///:-`    
-                 `.:///::::://////////////////////////////////////:::::::::::::::-----......-:/:.    
-               `-//:-----::::://///////////////////////////////:///////////////////:-::::---..-//:`    
-              `:/:---://+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//+++//::--//:    
-             `//:-/+oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo+++oooo+//://.    
-             :///ossssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssosssssso+//:    
-            `//+sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss+/-    
-            `//+ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo+++++/.    
-             ``````````````````````````````````````````````````````````````````````````````````````     
+
+                                                     `..--------..`
+                                                 .-:///::------::///:.`
+                                              `-//:-.`````````````.-://:.`    `   `
+                                            .://-.```````````````````.-://-`  :  `-   .
+                                          `-//:.........................-://. /. -: `:`  ``
+                                         `://--------:::://////:::--------://-::.::`:- .:.
+                              ``.---..` `///::::::///////////////////:::::::///::::::--:.`.-.
+                            .://::::///::///::///////////////////////////:::///:-----::--:-`  `
+                          `:/:-...--:://////////////////////////////////////////----------.--.`
+                         `:/:..-:://////////////////////////////////////////////-----------.````
+                         .//-::////////////////////////////////////:::::////////-...--------...`
+                         -/////////////////////////////////////////////::::----:. `.-::::::-..``
+                    ``.--:////////////////////////////////////////////////::-..```-///::::///:-`
+                 `.:///::::://////////////////////////////////////:::::::::::::::-----......-:/:.
+               `-//:-----::::://///////////////////////////////:///////////////////:-::::---..-//:`
+              `:/:---://+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//+++//::--//:
+             `//:-/+oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo+++oooo+//://.
+             :///ossssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssosssssso+//:
+            `//+sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss+/-
+            `//+ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo+++++/.
+             ``````````````````````````````````````````````````````````````````````````````````````
                                                              Cloudflare DNS Enumeration Tool v1.2
                                                                                     By mandatory
         """
+
+    def checkError(self, data):
+        if not data['success']:
+            for error in data['errors']:
+                message = error['message']
+                if isinstance(message, dict):
+                    print message
+                else:
+                    self.errormsg('[' + str(error['code']) + '] ' + error['message'])
+            exit(1)
 
 
     def pprint( self, input_dict ):
@@ -176,6 +193,9 @@ class cloudflare_enum:
     def successmsg( self, msg ):
         if self.verbose:
             print "[ SUCCESS ] " + msg
+
+    def help ( self ):
+        print "Usage: ./cloudflare_enum.py EMAIL PASSWORD"
 
     def find_between_r( self, s, first, last ):
         try:
@@ -201,7 +221,7 @@ class cloudflare_enum:
             for i, item in enumerate(data):
                 if "	" in data[i]:
                     pew = data[i].split( "	" )
-                    return_dict[ pew[5] ] = pew[6] 
+                    return_dict[ pew[5] ] = pew[6]
 
         return return_dict
 
