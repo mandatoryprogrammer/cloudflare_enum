@@ -172,10 +172,7 @@ class cloudflare_enum:
         if not data['success']:
             for error in data['errors']:
                 message = error['message']
-                if isinstance(message, dict):
-                    print message
-                else:
-                    self.errormsg('[' + str(error['code']) + '] ' + error['message'])
+                self.errormsg('[' + str(error['code']) + '] ' + error['message'])
             exit(1)
 
 
