@@ -3,6 +3,7 @@
 # Created using Metafidv2 by Matthew Bryant (mandatory)
 # Unauthorized use is stricly prohibited, please contact mandatory@gmail.com with questions/comments.
 import requests
+import getpass
 import json
 import time
 import csv
@@ -157,8 +158,9 @@ class cloudflare_enum:
             `//+sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss+/-    
             `//+ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo+++++/.    
              ``````````````````````````````````````````````````````````````````````````````````````     
-                                                             Cloudflare DNS Enumeration Tool v1.2
-                                                                                    By mandatory
+                                                             Cloudflare DNS Enumeration Tool v1.3
+                                                                             Created by mandatory
+                                                                             Modified by yamakira
         """
 
 
@@ -205,11 +207,17 @@ class cloudflare_enum:
 
         return return_dict
 
+    def get_creds(self):
+        username = sys.argv[1]
+        password = getpass.getpass('Provide your cloudflare password:')
+        return username,password 
+
 if __name__ == "__main__":
-    if len( sys.argv ) < 3:
-        print "Usage: " + sys.argv[0] + " username@email.com password domain.com"
+    if len( sys.argv ) < 2:
+        print "Usage: " + sys.argv[0] + " username@email.com domain.com"
     else:
         cloud = cloudflare_enum()
+        username,password = cloud.get_creds()
         cloud.print_banner()
-        cloud.log_in( sys.argv[1], sys.argv[2] )
-        cloud.get_spreadsheet( sys.argv[3] )
+        cloud.log_in(username,password)
+        cloud.get_spreadsheet(sys.argv[2])
