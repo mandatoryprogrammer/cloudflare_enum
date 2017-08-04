@@ -3,6 +3,7 @@
 # Created using Metafidv2 by Matthew Bryant (mandatory)
 # Unauthorized use is stricly prohibited, please contact mandatory@gmail.com with questions/comments.
 import requests
+import argparse
 import json
 import time
 import csv
@@ -16,7 +17,6 @@ class cloudflare_enum:
         self.global_headers = {
         }
         self.verbose = True
-
         self.s = requests.Session()
         self.s.headers.update( self.global_headers )
         self.atok = ''
@@ -119,44 +119,44 @@ class cloudflare_enum:
 
         return return_data['result']
 
-    def get_spreadsheet( self, domain ):
+    def get_spreadsheet( self, domain, output ):
         dns_data = self.get_domain_dns( domain )
         if dns_data:
-            filename = domain.replace( ".", "_" ) + ".csv"
+            # filename = domain.replace( ".", "_" ) + ".csv"
 
-            with open( filename, 'wb' ) as csvfile:
+            with open( output, 'wb' ) as csvfile:
                 dns_writer = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
                 dns_writer.writerow( [ "name", "type", "content" ] )
                 for record in dns_data:
                     dns_writer.writerow( [ record["name"], record["type"], record["content"] ] )
-                
-            self.statusmsg( "Spreadsheet created at " + os.getcwd() + "/" + filename )
+
+            self.statusmsg( "Spreadsheet created at " + output )
 
     def print_banner( self ):
         if self.verbose:
             print """
-            
-                                                     `..--------..`                               
-                                                 .-:///::------::///:.`                           
-                                              `-//:-.`````````````.-://:.`    `   `               
-                                            .://-.```````````````````.-://-`  :  `-   .           
-                                          `-//:.........................-://. /. -: `:`  ``       
-                                         `://--------:::://////:::--------://-::.::`:- .:.        
-                              ``.---..` `///::::::///////////////////:::::::///::::::--:.`.-.     
-                            .://::::///::///::///////////////////////////:::///:-----::--:-`  `    
-                          `:/:-...--:://////////////////////////////////////////----------.--.`    
-                         `:/:..-:://////////////////////////////////////////////-----------.````    
-                         .//-::////////////////////////////////////:::::////////-...--------...`    
-                         -/////////////////////////////////////////////::::----:. `.-::::::-..``    
-                    ``.--:////////////////////////////////////////////////::-..```-///::::///:-`    
-                 `.:///::::://////////////////////////////////////:::::::::::::::-----......-:/:.    
-               `-//:-----::::://///////////////////////////////:///////////////////:-::::---..-//:`    
-              `:/:---://+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//+++//::--//:    
-             `//:-/+oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo+++oooo+//://.    
-             :///ossssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssosssssso+//:    
-            `//+sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss+/-    
-            `//+ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo+++++/.    
-             ``````````````````````````````````````````````````````````````````````````````````````     
+
+                                                     `..--------..`
+                                                 .-:///::------::///:.`
+                                              `-//:-.`````````````.-://:.`    `   `
+                                            .://-.```````````````````.-://-`  :  `-   .
+                                          `-//:.........................-://. /. -: `:`  ``
+                                         `://--------:::://////:::--------://-::.::`:- .:.
+                              ``.---..` `///::::::///////////////////:::::::///::::::--:.`.-.
+                            .://::::///::///::///////////////////////////:::///:-----::--:-`  `
+                          `:/:-...--:://////////////////////////////////////////----------.--.`
+                         `:/:..-:://////////////////////////////////////////////-----------.````
+                         .//-::////////////////////////////////////:::::////////-...--------...`
+                         -/////////////////////////////////////////////::::----:. `.-::::::-..``
+                    ``.--:////////////////////////////////////////////////::-..```-///::::///:-`
+                 `.:///::::://////////////////////////////////////:::::::::::::::-----......-:/:.
+               `-//:-----::::://///////////////////////////////:///////////////////:-::::---..-//:`
+              `:/:---://+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//+++//::--//:
+             `//:-/+oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo+++oooo+//://.
+             :///ossssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssosssssso+//:
+            `//+sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss+/-
+            `//+ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo+++++/.
+             ``````````````````````````````````````````````````````````````````````````````````````
                                                              Cloudflare DNS Enumeration Tool v1.2
                                                                                     By mandatory
         """
@@ -201,15 +201,19 @@ class cloudflare_enum:
             for i, item in enumerate(data):
                 if "	" in data[i]:
                     pew = data[i].split( "	" )
-                    return_dict[ pew[5] ] = pew[6] 
+                    return_dict[ pew[5] ] = pew[6]
 
         return return_dict
 
 if __name__ == "__main__":
-    if len( sys.argv ) < 3:
-        print "Usage: " + sys.argv[0] + " username@email.com password domain.com"
-    else:
+        parser = argparse.ArgumentParser(description='Process Cloudflare Enum arguments.')
+        parser.add_argument("-e", "--email", help="Cloudflare account email", required=True)
+        parser.add_argument("-p", "--password", help="Cloudflare account password", required=True)
+        parser.add_argument("-d", "--domain", help="Target domain", required=True)
+        parser.add_argument("-o", "--output", help="Output filename", required=True)
+        args = parser.parse_args()
+
         cloud = cloudflare_enum()
         cloud.print_banner()
-        cloud.log_in( sys.argv[1], sys.argv[2] )
-        cloud.get_spreadsheet( sys.argv[3] )
+        cloud.log_in( args.email, args.password )
+        cloud.get_spreadsheet( args.domain, args.output )
