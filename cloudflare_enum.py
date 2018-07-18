@@ -45,6 +45,7 @@ class cloudflare_enum:
         self.s.headers.update( dict( new_headers.items() + self.global_headers.items() ) )
         r = self.s.post('https://www.cloudflare.com/a/login', data=post_data)
         self.atok = self.find_between_r( r.text, 'window.bootstrap = {"atok":"', '","locale":"' ) # http://xkcd.com/292/
+        self.cookie = r.cookies['vses2']
 
     def get_domain_dns( self, domain ):
         parse_dict = {}
@@ -71,7 +72,8 @@ class cloudflare_enum:
             'X-ATOK': self.atok,
         }
         self.s.headers.update( dict( new_headers.items() + self.global_headers.items() ) )
-        r = self.s.post('https://www.cloudflare.com/api/v4/zones', data=json.dumps( post_data ))
+        c = {'vses2': self.cookie}
+        r = self.s.post('https://www.cloudflare.com/api/v4/zones', data=json.dumps( post_data ), cookies=c)
         data = json.loads( r.text )
         success = data['success']
         if not success:
